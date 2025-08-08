@@ -84,10 +84,6 @@ processor = QuestionProcessor('your-api-key')
 "
 ```
 
-说明：
-- 已移除非AI的题目拆分与处理逻辑；当前逻辑依赖 OpenAI 对题型 markdown 进行标准化与导出
-- 已移除 Gemini 支持，统一使用 `.env` 中的 OpenAI 配置
-
 ### 各题型独立标准化器（可直接运行生成 Excel）
 ```bash
 uv run python single_choice_standardizer.py      # 单选题
@@ -142,12 +138,12 @@ cat question_processing_*/question_types/单选题_questions/question_0001.md
 ```
 question_processing_[PDF名称]/
 ├── question_types/              # 题型分类文件
-│   ├── single_choice.md         # 单选题 (476题)
-│   ├── multiple_choice.md       # 多选题 (124题)
-│   ├── judgment.md              # 判断题 (318题)
-│   ├── short_answer.md          # 简答题 (45题)
-│   ├── essay.md                # 论述题 (23题)
-│   └── case_analysis.md        # 案例分析题 (22题)
+│   ├── single_choice.md         # 单选题
+│   ├── multiple_choice.md       # 多选题
+│   ├── judgment.md              # 判断题
+│   ├── short_answer.md          # 简答题
+│   ├── essay.md                # 论述题
+│   └── case_analysis.md        # 案例分析题
 ├── 单选题_questions/            # 拆分出的单选题
 │   ├── question_0001.md
 │   ├── question_0002.md
@@ -157,7 +153,7 @@ question_processing_[PDF名称]/
 └── split_summary.md            # 总体拆分统计
 ```
 
-### 测试文件位置
+### 单元测试文件位置
 
 ```
 tests/
@@ -168,7 +164,7 @@ tests/
 └── ...
 ```
 
-说明：临时调试脚本已清理（如 `simple_test.py`、`debug_gemini.py`）。请使用 `pytest` 在 `tests/` 目录下运行单元测试。
+说明：请使用 `pytest` 在 `tests/` 目录下运行单元测试。
 
 ## 故障排除
 
@@ -208,13 +204,60 @@ tests/
 3. 添加适当的文档和注释
 4. 提交前进行充分测试
 
-## 未来规划
+## 产品路线图
 
-- 提供跨平台客户端（桌面GUI），一键导入 Word/PDF/TXT，自动生成 Excel
-- 内置模板选择与题型映射配置
-- 支持批量处理与断点续跑
-- 模型/速率/重试等参数可视化配置
-- 生态：导出 CSV/JSON、数据库入库、API 服务化
+### 第一阶段：桌面工具产品化（2-3个月）
+
+**核心目标：将命令行工具升级为用户友好的桌面应用**
+
+#### 用户界面优化
+- 🖥️ **桌面GUI应用**
+  - 简洁的拖拽上传界面
+  - 实时处理进度显示和状态反馈
+  - 一键导出Excel功能
+  - 处理结果预览和质量检查
+
+- 📁 **批量处理能力**
+  - 支持同时处理多个文件
+  - 批量导出和文件管理
+  - 处理历史记录和任务队列
+
+#### 功能增强
+- 📄 **文件格式扩展**
+  - 完善Word文档处理能力
+  - 支持TXT纯文本文件
+  - 支持图片格式题目识别（OCR）
+  - 智能文件格式检测
+
+- 📊 **输出定制化**
+  - 自定义Excel模板功能
+  - 多种导出格式选择（CSV、JSON）
+  - 题目质量评分和统计报告
+  - 处理日志和错误诊断
+
+#### 技术优化
+- 🎯 **识别准确率提升**
+  - 目标准确率95%+
+  - 优化题目分割算法
+  - 增强选项和答案提取
+  - 多语言题目支持
+
+- ⚡ **性能优化**
+  - 大文件处理优化
+  - 内存使用优化
+  - 断点续传功能
+  - 并发处理支持
+
+### 里程碑目标
+
+- **M1** (1个月): 完成基础GUI界面，支持单文件处理
+- **M2** (2个月): 实现批量处理，支持多种文件格式  
+- **M3** (3个月): 达到95%识别准确率，完成用户测试
+
+### 未来展望
+
+- **第二阶段**: SaaS云端平台，在线协作处理
+- **第三阶段**: AI智能化升级，题目生成和质量评估
 
 ## 许可证
 
