@@ -1,7 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-dialog'
+import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { SimpleTable, type Column } from '@/components/ui/table'
+import { ToastViewport, ToastItem, useToasts } from '@/components/ui/toast'
 
 type EventPayload = {
   type: 'stage' | 'progress' | 'warning' | 'error' | 'metric' | 'completed'
@@ -16,35 +22,42 @@ export function App() {
   const [events, setEvents] = useState<EventPayload[]>([])
   const [files, setFiles] = useState<string[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
+  const { toasts, push, remove } = useToasts()
 
   const handleStartMock = useCallback(async () => {
     try {
       await invoke('start_mock')
+      push({ title: '已触发 Mock 任务' })
     } catch (e) {
       console.error(e)
+      push({ title: '操作失败', description: String(e) })
     }
-  }, [])
+  }, [push])
 
   const handlePickFiles = useCallback(async () => {
     const selection = await open({ multiple: true, filters: [{ name: 'PDF', extensions: ['pdf'] }] })
     if (!selection) return
     const paths = Array.isArray(selection) ? selection : [selection]
     setFiles(paths as string[])
-  }, [])
+    push({ title: '已选择文件', description: `${paths.length} 个` })
+  }, [push])
 
   const handlePickOutput = useCallback(async () => {
     const dir = await open({ directory: true })
     if (typeof dir === 'string') setOutputDir(dir)
-  }, [])
+    if (typeof dir === 'string') push({ title: '已设置输出目录', description: dir })
+  }, [push])
 
   const handleStartJobs = useCallback(async () => {
     if (files.length === 0) return
     try {
       await invoke('start_jobs', { inputs: files, output_dir: outputDir ?? undefined })
+      push({ title: '任务已开始', description: `${files.length} 个文件` })
     } catch (e) {
       console.error(e)
+      push({ title: '任务启动失败', description: String(e) })
     }
-  }, [files, outputDir])
+  }, [files, outputDir, push])
 
   useEffect(() => {
     let unlisten: null | (() => void) = null
@@ -59,24 +72,70 @@ export function App() {
     }
   }, [])
 
+  const columns = useMemo<Column<(EventPayload & { id: number })>[]>(
+    () => [
+      { key: 'ts', title: '时间' },
+      { key: 'stage', title: '阶段' },
+      { key: 'type', title: '类型' },
+      {
+        key: 'percent',
+        title: '进度',
+        render: (v) => (typeof v === 'number' ? <Progress value={v} /> : '-')
+      },
+      { key: 'message', title: '信息', render: (v) => (v ? <span className="text-xs text-muted-foreground">{v}</span> : '-') },
+    ],
+    []
+  )
+
   return (
-    <div style={{ padding: 24, fontFamily: 'Inter, system-ui, -apple-system, Segoe UI' }}>
-      <h2>ExamParse Desktop</h2>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={handleStartMock}>开始 Mock 任务</button>
-        <button onClick={handlePickFiles}>选择 PDF</button>
-        <button onClick={handlePickOutput}>选择输出目录</button>
-        <button onClick={handleStartJobs} disabled={files.length === 0}>开始处理</button>
+    <div className="p-6">
+      <div className="mb-4">
+        <h2 className="text-2xl font-semibold">ExamParse Desktop</h2>
       </div>
-      <div style={{ marginBottom: 12, color: '#666' }}>
-        <div>已选文件：{files.length > 0 ? files.join(', ') : '未选择'}</div>
-        <div>输出目录：{outputDir ?? '未设置（将使用默认）'}</div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-1">
+          <CardHeader>
+            <CardTitle>控制台</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleStartMock}>开始 Mock 任务</Button>
+              <Button variant="secondary" onClick={handlePickFiles}>选择 PDF</Button>
+              <Button variant="ghost" onClick={handlePickOutput}>选择输出目录</Button>
+              <Button onClick={handleStartJobs} disabled={files.length === 0}>开始处理</Button>
+            </div>
+            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+              <div>
+                已选文件：{files.length > 0 ? <span className="text-foreground">{files.length} 个</span> : '未选择'}
+              </div>
+              <div>输出目录：{outputDir ?? '未设置（将使用默认）'}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="xl:col-span-2">
+          <Card className="h-[420px]">
+            <CardHeader>
+              <CardTitle>事件流</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[340px] overflow-auto">
+                <SimpleTable
+                  columns={columns}
+                  data={events.map((e, i) => ({ ...e, id: i }))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-      <div style={{ height: 360, overflow: 'auto', border: '1px solid #e5e5e5', padding: 12 }}>
-        {events.map((e, i) => (
-          <pre key={i} style={{ margin: 0 }}>{JSON.stringify(e)}</pre>
+
+      <ToastViewport>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
         ))}
-      </div>
+      </ToastViewport>
     </div>
   )
 }

@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image: theme('backgroundImage.ai');
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+.card {
+  @apply bg-card/70 backdrop-blur border border-border rounded-lg shadow-glass;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-50 disabled:pointer-events-none h-9 px-4;
+}
+.btn-primary { @apply bg-primary text-primary-foreground hover:bg-indigo-500; }
+.btn-secondary { @apply bg-secondary text-secondary-foreground hover:bg-sky-500; }
+.btn-ghost { @apply bg-transparent border border-border hover:bg-white/5; }
+
+
