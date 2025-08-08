@@ -24,6 +24,13 @@
   - [ ] 阶段二：断点续跑与中间产物恢复（按阶段恢复点）
 - [x] 错误分类与重试策略（指数退避、最大重试次数、可恢复/不可恢复区分）
 
+#### 新增（本轮）
+- [x] Tauri Rust 侧命令：`start_jobs`（支持单/多 PDF、可选输出目录、自动定位仓库根与 `.venv`）
+- [x] 修复构建：新增 `build.rs` 与 `tauri-build`，引入 `tauri::Emitter`
+- [x] Windows 图标：生成 `src-tauri/icons/icon.ico`（占位），消除构建失败
+- [x] 前端事件订阅：改用 `@tauri-apps/api/event` 的 `listen` 订阅 `sidecar-event`
+- [x] 前端最小界面：标题、按钮（开始 Mock、选择 PDF、选择输出目录、开始处理）、事件列表渲染
+
 ### 下一步：UI 外壳（Tauri + React）
 - 设计系统 & 视觉
   - [ ] 设计 Tokens（色板、半径、阴影、动效参数）、暗色默认主题、AI 渐变/毛玻璃风格
@@ -32,8 +39,9 @@
 - Tauri 项目初始化
   - [x] 新建 `apps/desktop/`（Tauri 外壳 + React UI）
   - [x] Dev 启动链路（`tauri.conf.json` 指向 `ui/`，Rust 命令 `start_mock`）
+  - [x] 事件桥接命令：`start_jobs`（真实 sidecar）
   - [ ] 打包目标配置（win/mac/linux）与 sidecar 嵌入
-  - [ ] 定义完整 IPC：事件订阅/转发、任务派发接口、密钥存储（Keychain）
+  - [ ] 定义完整 IPC：任务派发接口、密钥存储（Keychain）
 - 页面与流程
   - [ ] 欢迎/设置（首次启动引导、API Key/模型/OCR 开关，系统钥匙串存储）
   - [ ] 主工作台（拖拽区 + 文件列表：名称/类型/大小/状态）
@@ -42,8 +50,8 @@
   - [ ] 结果预览（表格分页、筛选题型/质量、告警提示）
   - [ ] 导出完成（打开文件夹、复制路径、再次处理）
 - 功能联动
+  - [x] 与 sidecar 事件流对接（最小事件列表展示）
   - [ ] 文件类型检测与去重（PDF/Word/TXT，预留 OCR）
-  - [ ] 与 sidecar 事件流对接（前端状态机驱动 UI）
   - [ ] 导出 Excel、一键打开所在目录
   - [ ] i18n 基础（中文优先，预留英文资源）
 
