@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://examparse.local/schemas/sidecar-event.schema.json",
+  "title": "SidecarEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "stage", "ts", "fileId"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["stage", "progress", "warning", "error", "metric", "completed"]
+    },
+    "stage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fileId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "message": {
+      "type": ["string", "null"]
+    },
+    "percent": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}
+
+
