@@ -5,6 +5,7 @@
 
 import fitz  # PyMuPDF
 import openpyxl
+import openai  # 兼容测试对 question_processor.openai.OpenAI 的 monkeypatch
 import json
 import re
 import os
@@ -27,9 +28,12 @@ class QuestionProcessor:
         "案例分析题": {"name": "case_analysis", "pattern": r"七、案例分析题：.*[（(](\d+).*题[）)]"}
     }
     
-    def __init__(self):
-        """初始化（不再依赖 Gemini）"""
-        pass
+    def __init__(self, api_key: Optional[str] = None):
+        """初始化（不再依赖 Gemini）
+
+        兼容测试：允许传入 api_key 参数但不强制使用。
+        """
+        self.api_key = api_key
     
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """从PDF文件中提取所有文本"""

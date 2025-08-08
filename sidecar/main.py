@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .events import SidecarEvent
 from .config import RunConfig
+from .runner import run_split_and_split_questions
 
 
 def emit(event: SidecarEvent):
@@ -67,9 +68,31 @@ def main(argv: list[str] | None = None) -> int:
                 mock_pipeline(ip, output_path, file_id)
         return 0
 
-    # 真实路径：调用现有 main.py / 标准化脚本，逐阶段输出 JSON 事件
-    emit(SidecarEvent(type="error", stage="startup", fileId="startup", message="real pipeline not wired yet"))
-    return 2
+    # 真实执行：当前仅打通 split + split-questions
+    try:
+        if len(cfg.inputs) == 1:
+            file_id = uuid.uuid4().hex
+            work_parent = Path.cwd()
+            run_split_and_split_questions(
+                pdf_path=cfg.inputs[0],
+                work_dir_parent=work_parent,
+                emit=emit,
+                file_id=file_id,
+            )
+        else:
+            work_parent = Path.cwd()
+            for ip in cfg.inputs:
+                file_id = uuid.uuid4().hex
+                run_split_and_split_questions(
+                    pdf_path=ip,
+                    work_dir_parent=work_parent,
+                    emit=emit,
+                    file_id=file_id,
+                )
+        return 0
+    except Exception as exc:
+        emit(SidecarEvent(type="error", stage="runtime", fileId="runtime", message=str(exc)))
+        return 2
 
 
 if __name__ == "__main__":

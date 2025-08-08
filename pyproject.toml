@@ -24,4 +24,5 @@ dev = [
 dev = [
     "pytest>=8.3.5",
     "pytest-mock>=3.14.1",
+    "fastjsonschema>=2.20.0",
 ]
