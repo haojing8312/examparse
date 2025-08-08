@@ -197,6 +197,43 @@ tests/
 - 可以单独处理特定题型进行调试
 - 使用 `--type-file` 参数进行精确测试
 
+## 桌面应用（Tauri + React）
+
+### 环境要求
+- Node.js 18+、Rust（stable）
+- Windows: 安装 Microsoft Visual Studio Build Tools（含 C++ 桌面开发、Windows 10/11 SDK）和 WebView2 Runtime
+- Linux: `pkg-config`、`libgtk-3-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`libwebkit2gtk-4.1-dev`（或老版本 `-4.0-dev`）
+
+### 开发与运行
+1) 准备 Python 环境与临时 PDF
+```
+uv venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+uv sync
+mkdir -p tmp && cp "《数据安全管理员题库》（客观题）-20250713（提交版）.pdf" tmp/a.pdf
+```
+2) 启动桌面应用（开发模式）
+```
+cd apps/desktop/ui && npm i
+cd .. && npm i
+npm run dev
+```
+- 启动后点击“开始 Mock 任务”可查看事件流；后续会接入真实文件选择并调用 `python -m sidecar.main --input`。
+
+### 仅构建（服务器/无图形环境）
+```
+sudo apt update && sudo apt install -y \
+  pkg-config build-essential curl wget file patchelf \
+  libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev
+
+cd apps/desktop/ui && npm i && npm run build
+cd .. && npm i && npm run build
+```
+- 生成的安装包可下载到本地 Windows/Linux 桌面运行。
+
+### 事件契约
+- 详见 `sidecar/EVENTS.md` 与 `sidecar/event_schema.json`，前端通过事件流渲染进度。
+
 ## 贡献指南
 
 1. 运行测试确保功能正常
