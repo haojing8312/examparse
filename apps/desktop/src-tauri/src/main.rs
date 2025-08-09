@@ -1,12 +1,34 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::process::{Command, Stdio};
 use std::io::{BufRead, BufReader};
 use std::thread;
 use tauri::Emitter;
 use std::path::{Path, PathBuf};
 use std::env;
+use std::fs;
+use keyring::Entry;
+use directories::ProjectDirs;
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AppSettings {
+    pub openai_model: String,
+    pub openai_base_url: String,
+    pub ocr_enabled: bool,
+    pub first_launch: bool,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            openai_model: "gpt-4o".to_string(),
+            openai_base_url: "https://api.openai.com/v1".to_string(),
+            ocr_enabled: false,
+            first_launch: true,
+        }
+    }
+}
 
 #[derive(Serialize)]
 struct EventLine {
@@ -171,6 +193,79 @@ fn choose_python_exec(repo_root: &Path) -> PathBuf {
     PathBuf::from("python")
 }
 
+fn get_config_dir() -> Result<PathBuf, String> {
+    ProjectDirs::from("com", "examparse", "examparse")
+        .map(|dirs| dirs.config_dir().to_path_buf())
+        .ok_or("Could not get config directory".to_string())
+}
+
+fn get_settings_path() -> Result<PathBuf, String> {
+    let config_dir = get_config_dir()?;
+    fs::create_dir_all(&config_dir).map_err(|e| format!("Failed to create config directory: {}", e))?;
+    Ok(config_dir.join("settings.json"))
+}
+
+#[tauri::command]
+async fn load_settings() -> Result<AppSettings, String> {
+    let settings_path = get_settings_path()?;
+    
+    if !settings_path.exists() {
+        return Ok(AppSettings::default());
+    }
+    
+    let content = fs::read_to_string(&settings_path)
+        .map_err(|e| format!("Failed to read settings file: {}", e))?;
+    
+    let settings: AppSettings = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings: {}", e))?;
+    
+    Ok(settings)
+}
+
+#[tauri::command]
+async fn save_settings(settings: AppSettings) -> Result<(), String> {
+    let settings_path = get_settings_path()?;
+    
+    let content = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    fs::write(&settings_path, content)
+        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+async fn save_api_key(api_key: String) -> Result<(), String> {
+    let entry = Entry::new("examparse", "openai_api_key")
+        .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+    
+    entry.set_password(&api_key)
+        .map_err(|e| format!("Failed to save API key: {}", e))?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+async fn load_api_key() -> Result<String, String> {
+    let entry = Entry::new("examparse", "openai_api_key")
+        .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+    
+    entry.get_password()
+        .map_err(|_| "No API key found".to_string())
+}
+
+#[tauri::command]
+async fn delete_api_key() -> Result<(), String> {
+    let entry = Entry::new("examparse", "openai_api_key")
+        .map_err(|e| format!("Failed to create keyring entry: {}", e))?;
+    
+    entry.delete_credential()
+        .map_err(|e| format!("Failed to delete API key: {}", e))?;
+    
+    Ok(())
+}
+
 #[tauri::command]
 async fn start_jobs(app_handle: tauri::AppHandle, window: tauri::Window, inputs: Vec<String>, output_dir: Option<String>) -> Result<(), String> {
     if inputs.is_empty() {
@@ -197,7 +292,15 @@ async fn start_jobs(app_handle: tauri::AppHandle, window: tauri::Window, inputs:
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![start_mock, start_jobs])
+        .invoke_handler(tauri::generate_handler![
+            start_mock, 
+            start_jobs, 
+            load_settings, 
+            save_settings, 
+            save_api_key, 
+            load_api_key, 
+            delete_api_key
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

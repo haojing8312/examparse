@@ -9,6 +9,8 @@ import { Progress } from '@/components/ui/progress'
 import { SimpleTable, type Column } from '@/components/ui/table'
 import { ToastViewport, ToastItem, useToasts } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/ui/dialog'
+import { WelcomeFlow } from '@/components/WelcomeFlow'
+import { SettingsForm, type AppSettings } from '@/components/SettingsForm'
 
 type EventPayload = {
   type: 'stage' | 'progress' | 'warning' | 'error' | 'metric' | 'completed'
@@ -23,9 +25,29 @@ export function App() {
   const [events, setEvents] = useState<EventPayload[]>([])
   const [files, setFiles] = useState<string[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const { toasts, push, remove } = useToasts()
   const [errorOpen, setErrorOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string>('')
+
+  useEffect(() => {
+    const loadInitialSettings = async () => {
+      try {
+        const loadedSettings = await invoke<AppSettings>('load_settings')
+        setSettings(loadedSettings)
+        
+        if (loadedSettings.first_launch) {
+          setShowWelcome(true)
+        }
+      } catch (e) {
+        console.error('Failed to load settings:', e)
+        setShowWelcome(true)
+      }
+    }
+    loadInitialSettings()
+  }, [])
 
   const handleStartMock = useCallback(async () => {
     try {
@@ -100,6 +122,16 @@ export function App() {
     }
   }, [events, push])
 
+  const handleWelcomeComplete = useCallback(() => {
+    setShowWelcome(false)
+    window.location.reload()
+  }, [])
+
+  const handleSettingsComplete = useCallback(() => {
+    setShowSettings(false)
+    window.location.reload()
+  }, [])
+
   const columns = useMemo<Column<(EventPayload & { id: number })>[]>(
     () => [
       { key: 'ts', title: '时间' },
@@ -119,10 +151,39 @@ export function App() {
     []
   )
 
+  if (showWelcome) {
+    return (
+      <div>
+        <WelcomeFlow onComplete={handleWelcomeComplete} />
+        <ToastViewport>
+          {toasts.map((t) => (
+            <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
+          ))}
+        </ToastViewport>
+      </div>
+    )
+  }
+
+  if (showSettings) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <SettingsForm onComplete={handleSettingsComplete} />
+        <ToastViewport>
+          {toasts.map((t) => (
+            <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
+          ))}
+        </ToastViewport>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-semibold">ExamParse Desktop</h2>
+        <Button variant="ghost" onClick={() => setShowSettings(true)}>
+          设置
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
