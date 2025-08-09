@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "Bash(\"apps/desktop/src-tauri/sidecar-dist/examparse-sidecar.exe\" --help)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

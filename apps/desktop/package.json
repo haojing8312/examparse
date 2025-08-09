@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build"
+    "build": "tauri build",
+    "build:sidecar": "python ../../scripts/build_sidecar.py",
+    "build:full": "python ../../scripts/build_desktop.py",
+    "build:dev": "python ../../scripts/build_desktop.py --dev",
+    "clean": "python ../../scripts/build_desktop.py --clean",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"

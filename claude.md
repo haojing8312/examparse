@@ -1,40 +1,173 @@
-项目测试说明（面向AI协作）
+# CLAUDE.md
 
-1. 单元测试组织
-   - 所有单元测试统一放置在 `tests/` 目录
-   - 运行全部用例：
-     ```bash
-     uv run pytest tests -q
-     ```
-   - 运行单个用例：
-     ```bash
-     uv run pytest tests/test_text_splitting.py -v
-     ```
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-2. 临时脚本清理
-   - 为保持仓库整洁，临时调试脚本已移除（例如 `simple_test.py`、`debug_gemini.py`）
-   - 如需调试，请新增临时分支或在 `tests/` 内编写隔离的用例
+## Project Overview
 
-3. 标准化器入口
-   - 各题型标准化器的 `main()` 默认执行：标准化 → 解析标准化结果 → 生成 Excel
-   - 例如：
-     ```bash
-     uv run python single_choice_standardizer.py
-     uv run python judgment_standardizer.py
-     uv run python multiple_choice_standardizer.py
-     uv run python short_answer_standardizer.py
-     uv run python essay_standardizer.py
-     ```
+ExamParse is a tool for converting PDF/Word exam question files into structured Excel format. It uses AI (OpenAI/Gemini) to standardize and parse different question types (single choice, multiple choice, judgment, short answer, essay, case analysis).
 
-4. 公共工具复用
-   - `utils/standardization_utils.py` 提供：
-     - 文件分块、OpenAI重试调用
-     - 标准化文本分割、分块结果与原始内容保存
-     - 标准化目录遍历、Markdown代码块提取
-     - Excel写入（含表头渲染与列宽自动调整）
+## Architecture
 
-5. 常见问题
-   - `openai` import 警告：请确保在虚拟环境中安装依赖并通过 `uv sync` 同步
-   - 生成的标准化目录与 Excel 路径：均在对应题型目录内自动创建
+### Core Components
+- **Standardizers**: Individual processors for each question type (`*_standardizer.py`) that extend `QuestionStandardizerBase`
+- **Utils**: Common utilities in `utils/standardization_utils.py` for file processing, AI calls, and Excel generation
+- **Sidecar**: Event-driven processing system for desktop integration (`sidecar/`)
+- **Desktop App**: Tauri + React GUI in `apps/desktop/`
 
+### Processing Flow
+1. **Text Extraction**: Extract text from PDF/Word files
+2. **Question Type Classification**: Identify and separate different question types
+3. **Chunking**: Split content into manageable chunks for AI processing
+4. **Standardization**: Use AI to convert raw text into structured format
+5. **Export**: Generate Excel files with standardized question data
 
+## Development Commands
+
+### Environment Setup
+```bash
+# Install dependencies
+uv sync
+
+# Activate virtual environment
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
+```
+
+### Testing
+```bash
+# Run all tests
+uv run pytest tests -q
+
+# Run specific test file
+uv run pytest tests/test_text_splitting.py -v
+
+# Run specific test pattern
+uv run pytest tests/test_sidecar* -v
+```
+
+### Question Standardization
+```bash
+# Process all question types
+uv run python main.py --type all
+
+# Process specific question type
+uv run python main.py --type single --base-dir "question_processing_*/question_types"
+
+# Run individual standardizers directly
+uv run python single_choice_standardizer.py
+uv run python judgment_standardizer.py
+uv run python multiple_choice_standardizer.py
+uv run python short_answer_standardizer.py
+uv run python essay_standardizer.py
+uv run python case_analysis_standardizer.py
+```
+
+### Desktop Application
+```bash
+# Install desktop dependencies
+cd apps/desktop/ui && npm i
+cd .. && npm i
+
+# Start development mode
+npm run dev
+
+# Build desktop app
+npm run build
+```
+
+## Configuration
+
+### Environment Variables
+Create `.env` file from `env.example`:
+```
+OPENAI_API_KEY=sk-xxxx
+OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_MODEL_NAME=gpt-4o
+```
+
+### API Configuration
+- OpenAI config in `config.py` with automatic `.env` loading
+- Gemini support available as alternative
+- Retry logic and error handling built into `utils/standardization_utils.py`
+
+## Key Files and Patterns
+
+### Standardizer Base Class
+All question type standardizers inherit from `QuestionStandardizerBase` in `question_standardizer_base.py`:
+- Implements chunking, AI calling, and result parsing
+- Standardizers must implement abstract methods: `get_question_type_name()`, `get_standard_format()`, etc.
+
+### Common Utilities
+`utils/standardization_utils.py` provides:
+- File chunking with configurable overlap
+- OpenAI API calls with retry logic
+- Markdown content extraction
+- Excel generation with auto-formatting
+- Question text splitting and parsing
+
+### Event System
+Sidecar uses JSON event streaming (`sidecar/EVENTS.md`):
+- Event types: stage, progress, warning, error, metric, completed
+- Schema validation in `sidecar/event_schema.json`
+- Desktop app consumes events for UI updates
+
+## File Structure Patterns
+
+### Generated Output Structure
+```
+question_processing_[PDF_NAME]/
+├── question_types/              # Question type markdown files
+│   ├── single_choice.md
+│   ├── multiple_choice.md
+│   └── ...
+├── [TYPE]_questions/           # Split questions per type
+│   ├── question_0001.md
+│   └── split_stats.md
+└── split_summary.md
+```
+
+### Standardization Output
+```
+[TYPE]_standardized/
+├── original_backup.md
+├── standardized_chunk_001.md
+├── original_chunk_001.md
+├── standardization_report.md
+└── quality_stats.json
+```
+
+## Development Guidelines
+
+### Adding New Question Types
+1. Create new standardizer class extending `QuestionStandardizerBase`
+2. Implement required abstract methods
+3. Add prompt templates and parsing logic
+4. Update `main.py` to include new type
+5. Add corresponding tests in `tests/`
+
+### Working with AI Responses
+- Use consistent separators: `=== 题目分隔符 ===`
+- Implement fallback parsing for different response formats
+- Handle API failures gracefully with retry logic
+- Validate and clean extracted content
+
+### Testing Strategy
+- Unit tests for text processing in `tests/test_text_splitting.py`
+- Integration tests for sidecar events
+- Excel output validation
+- API mocking for reliable CI/CD
+
+## Common Issues
+
+### Import Warnings
+Ensure virtual environment activation: `source .venv/bin/activate && uv sync`
+
+### File Processing
+- Generated directories auto-created in corresponding question type folders
+- Check `split_stats.md` files for processing statistics
+- Review `standardization_report.md` for quality metrics
+
+### Desktop App Dependencies
+- Windows: Visual Studio Build Tools + WebView2 Runtime
+- Linux: gtk3-dev, webkit2gtk-dev, pkg-config
+- Ensure Python environment accessible from Tauri context

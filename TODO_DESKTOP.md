@@ -33,20 +33,20 @@
 
 ### 下一步：UI 外壳（Tauri + React）
 - 设计系统 & 视觉
-  - [ ] 设计 Tokens（色板、半径、阴影、动效参数）、暗色默认主题、AI 渐变/毛玻璃风格
-  - [ ] 组件基座：Radix/Headless + Tailwind + Framer Motion
-  - [ ] 基础组件封装：Button、Card、Progress、Toast、Dialog、DataTable（分页/筛选）
+  - [x] 设计 Tokens（色板、半径、阴影、动效参数）、暗色默认主题、AI 渐变/毛玻璃风格
+  - [x] 组件基座：Radix/Headless + Tailwind + Framer Motion
+  - [x] 基础组件封装：Button、Card、Progress、Toast、Dialog、DataTable（分页/筛选）
 - Tauri 项目初始化
   - [x] 新建 `apps/desktop/`（Tauri 外壳 + React UI）
   - [x] Dev 启动链路（`tauri.conf.json` 指向 `ui/`，Rust 命令 `start_mock`）
   - [x] 事件桥接命令：`start_jobs`（真实 sidecar）
-  - [ ] 打包目标配置（win/mac/linux）与 sidecar 嵌入
+  - [x] 打包目标配置（win/mac/linux）与 sidecar 嵌入
   - [ ] 定义完整 IPC：任务派发接口、密钥存储（Keychain）
 - 页面与流程
   - [ ] 欢迎/设置（首次启动引导、API Key/模型/OCR 开关，系统钥匙串存储）
   - [ ] 主工作台（拖拽区 + 文件列表：名称/类型/大小/状态）
   - [ ] 任务队列（并发上限、暂停/继续/取消、失败重试）
-  - [ ] 进度与日志（阶段进度、事件时间线、错误弹窗、复制日志）
+  - [x] 进度与日志（阶段进度、事件时间线、错误弹窗、复制日志）
   - [ ] 结果预览（表格分页、筛选题型/质量、告警提示）
   - [ ] 导出完成（打开文件夹、复制路径、再次处理）
 - 功能联动
